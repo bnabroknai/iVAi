@@ -1,0 +1,6 @@
+{
+  "name": "Vital",
+  "description": "A voice-first health and intake logging system optimized for instant capture and Apple ecosystem aesthetics.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

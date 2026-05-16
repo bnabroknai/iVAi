@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt'])
+        && data.uid == request.auth.uid
+        && data.email is string
+        && data.createdAt == request.time
+        && data.updatedAt == request.time
+        && (data.get('preferences', null) == null || data.preferences is map);
+    }
+
+    function isValidEntry(data) {
+      return data.keys().hasAll(['userId', 'type', 'timestamp', 'value', 'createdAt'])
+        && data.userId == request.auth.uid
+        && data.type in ['hydration', 'food', 'medication', 'mood', 'energy', 'sleep', 'exercise', 'mindfulness', 'vitals', 'reflection']
+        && data.timestamp is string
+        && data.value is string && data.value.size() <= 5000
+        && data.createdAt == request.time;
+    }
+
+    // --- Collection Routes ---
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) 
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['preferences', 'displayName', 'photoURL', 'updatedAt']);
+    }
+
+    match /entries/{entryId} {
+      allow create: if isSignedIn() && isValidId(entryId) && isValidEntry(incoming());
+      allow get: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+    }
+
+    match /goals/{goalId} {
+      allow read, write: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid) && (request.resource == null || request.resource.data.userId == request.auth.uid);
+    }
+  }
+}

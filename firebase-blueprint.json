@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User preferences and metadata",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "dailyHydrationGoal": { "type": "number", "description": "Goal in oz" },
+            "dailySleepGoal": { "type": "number", "description": "Goal in hours" }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Entry": {
+      "title": "Health Entry",
+      "description": "A single health or intake log entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["hydration", "food", "medication", "mood", "energy", "sleep", "exercise", "mindfulness", "vitals", "reflection"]
+        },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "value": { "type": "string", "description": "Numeric or text value depending on type" },
+        "unit": { "type": "string", "description": "e.g., oz, mg, quality, level" },
+        "notes": { "type": "string" },
+        "source": { "type": "string", "enum": ["voice", "watch", "shortcut", "manual", "healthkit"] },
+        "confidence": { "type": "number" },
+        "rawTranscription": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "type", "timestamp", "value"]
+    },
+    "Goal": {
+      "title": "Goal",
+      "description": "User defined health goals",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "type": { "type": "string", "enum": ["hydration", "medication", "sleep", "exercise"] },
+        "targetValue": { "type": "number" },
+        "unit": { "type": "string" },
+        "frequency": { "type": "string", "enum": ["daily", "weekly"] }
+      },
+      "required": ["userId", "type", "targetValue"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/entries/{entryId}": {
+      "schema": "Entry",
+      "description": "Health entries for all users"
+    },
+    "/goals/{goalId}": {
+      "schema": "Goal",
+      "description": "User defined goals"
+    }
+  }
+}
